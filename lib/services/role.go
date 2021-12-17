@@ -352,6 +352,18 @@ func ApplyTraits(r types.Role, traits map[string][]string) types.Role {
 			r.SetDatabaseLabels(condition, applyLabelsTraits(inLabels, traits))
 		}
 
+		options := r.GetOptions()
+		for i, ext := range options.CertExtensions {
+			vals, err := ApplyValueTraits(ext.Value, traits)
+			if err != nil && !trace.IsNotFound(err) {
+				log.Debugf("Error applying trait to cert_extensions.value: %v", err)
+				continue
+			}
+			if len(vals) != 0 {
+				options.CertExtensions[i].Value = vals[0]
+			}
+		}
+
 		// apply templates to impersonation conditions
 		inCond := r.GetImpersonateConditions(condition)
 		var outCond types.ImpersonateConditions
@@ -619,6 +631,8 @@ type AccessChecker interface {
 
 	// RoleNames returns a list of role names
 	RoleNames() []string
+
+	Roles() RoleSet
 
 	// CheckAccess checks access to the specified resource.
 	CheckAccess(r AccessCheckable, mfa AccessMFAParams, matchers ...RoleMatcher) error
@@ -924,6 +938,19 @@ func (set RoleSet) RoleNames() []string {
 			continue
 		}
 		out = append(out, r.GetName())
+	}
+	return out
+}
+
+// Roles returns a slice with roles. Removes runtime roles like
+// the default implicit role.
+func (set RoleSet) Roles() RoleSet {
+	out := make(RoleSet, 0, len(set))
+	for _, r := range set {
+		if r.GetName() == constants.DefaultImplicitRole {
+			continue
+		}
+		out = append(out, r)
 	}
 	return out
 }

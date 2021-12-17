@@ -203,6 +203,18 @@ func (s *NativeSuite) TestUserCertCompatibility(c *check.C) {
 	caSigner, err := ssh.ParsePrivateKey(priv)
 	c.Assert(err, check.IsNil)
 
+	roleFoo, err := types.NewRole("foo", types.RoleSpecV4{
+		Options: types.RoleOptions{CertExtensions: []*types.CertExtension{
+			{
+				Type:  "ssh",
+				Mode:  "extension",
+				Name:  "login@github.com",
+				Value: "hello",
+			},
+		}},
+	})
+	c.Assert(err, check.IsNil)
+
 	tests := []struct {
 		inCompatibility string
 		outHasRoles     bool
@@ -230,7 +242,8 @@ func (s *NativeSuite) TestUserCertCompatibility(c *check.C) {
 			Username:              "user",
 			AllowedLogins:         []string{"centos", "root"},
 			TTL:                   time.Hour,
-			Roles:                 []string{"foo"},
+			RoleNames:             []string{"foo"},
+			Roles:                 services.RoleSet{roleFoo},
 			CertificateFormat:     tt.inCompatibility,
 			PermitAgentForwarding: true,
 			PermitPortForwarding:  true,
@@ -244,5 +257,8 @@ func (s *NativeSuite) TestUserCertCompatibility(c *check.C) {
 		// check if we added the roles extension
 		_, ok := userCertificate.Extensions[teleport.CertExtensionTeleportRoles]
 		c.Assert(ok, check.Equals, tt.outHasRoles, comment)
+		// check if users custom extension was added
+		extVal := userCertificate.Extensions["login@github.com"]
+		c.Assert(extVal, check.Equals, "hello")
 	}
 }

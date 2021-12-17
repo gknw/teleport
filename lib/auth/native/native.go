@@ -286,6 +286,16 @@ func (k *Keygen) GenerateUserCertWithoutValidation(c services.UserCertParams) ([
 		cert.Permissions.Extensions[teleport.CertExtensionImpersonator] = c.Impersonator
 	}
 
+	for _, role := range c.Roles {
+		for _, extension := range role.GetOptions().CertExtensions {
+			// TODO: update behavior when non ssh, non extensions are supported.
+			if extension.Mode != "extension" || extension.Type != "ssh" {
+				continue
+			}
+			cert.Extensions[extension.Name] = extension.Value
+		}
+	}
+
 	// Add roles, traits, and route to cluster in the certificate extensions if
 	// the standard format was requested. Certificate extensions are not included
 	// legacy SSH certificates due to a bug in OpenSSH <= OpenSSH 7.1:
@@ -298,8 +308,8 @@ func (k *Keygen) GenerateUserCertWithoutValidation(c services.UserCertParams) ([
 		if len(traits) > 0 {
 			cert.Permissions.Extensions[teleport.CertExtensionTeleportTraits] = string(traits)
 		}
-		if len(c.Roles) != 0 {
-			roles, err := services.MarshalCertRoles(c.Roles)
+		if len(c.RoleNames) != 0 {
+			roles, err := services.MarshalCertRoles(c.RoleNames)
 			if err != nil {
 				return nil, trace.Wrap(err)
 			}

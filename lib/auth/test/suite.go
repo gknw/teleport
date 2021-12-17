@@ -176,7 +176,7 @@ func (s *AuthSuite) GenerateUserCert(c *check.C) {
 		PermitAgentForwarding: true,
 		PermitPortForwarding:  true,
 		CertificateFormat:     constants.CertificateFormatStandard,
-		Roles:                 inRoles,
+		RoleNames:             inRoles,
 	})
 	c.Assert(err, check.IsNil)
 	parsedCert, err := sshutils.ParseCertificate(cert)

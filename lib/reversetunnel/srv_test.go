@@ -104,7 +104,7 @@ func TestServerKeyAuth(t *testing.T) {
 					PublicUserKey:     pub,
 					Username:          con.User(),
 					AllowedLogins:     []string{con.User()},
-					Roles:             []string{"dev", "admin"},
+					RoleNames:         []string{"dev", "admin"},
 					RouteToCluster:    "user-cluster-name",
 					CertificateFormat: constants.CertificateFormatStandard,
 					TTL:               time.Minute,
